@@ -1,0 +1,22 @@
+workflow:
+  - step: ParallelHarness.DeveloperAgent
+    action: generate_code
+    input: problem_statement
+    output: parallel_harness_code.py
+
+  - step: ParallelHarness.TesterAgent
+    action: lint_and_compile
+    input: parallel_harness_code.py
+    on_error: ParallelHarness.DeveloperAgent
+    run_in_parallel: true
+
+  - step: ParallelHarness.SecurityAgent
+    action: scan_code
+    input: parallel_harness_code.py
+    on_error: ParallelHarness.DeveloperAgent
+    run_in_parallel: true
+
+  - step: ParallelHarness.FinalizerAgent
+    action: package_and_save
+    input: parallel_harness_code.py
+    output: parallel_harness_bundle.zip

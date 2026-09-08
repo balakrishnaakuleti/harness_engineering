@@ -3,6 +3,13 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Harness-generated source files
+feedback_harness_code.py
+generated_code.py
+multi_agent_harness_code.py
+orchestrated_code.py
+parallel_harness_code.py
+
 # C extensions
 *.so
 
