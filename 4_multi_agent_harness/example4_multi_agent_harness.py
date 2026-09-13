@@ -1,3 +1,4 @@
+# Demo query: reverse a string (expected output substring: "reversed string")
 # example4_multi_agent_harness.py
 
 import re
@@ -6,8 +7,11 @@ import subprocess
 import sys
 import logging
 import time
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from harness_llm import get_llm
 
 # Configure logging
 logging.basicConfig(
@@ -17,11 +21,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Connect to local Ollama instance with Gemma model
-llm = ChatOllama(
-    model="gemma3:4b",
-    temperature=0
-)
+# Connect to the shared inference endpoint (openai/gpt-oss-120b)
+llm = get_llm()
 
 # Prompt template for developer agent
 developer_prompt = ChatPromptTemplate.from_template(
@@ -53,6 +54,9 @@ def extract_code(response: str) -> str:
     return response.strip() + "\n"
 
 
+# CONCEPT: Role-split architecture.
+# Generation and evaluation are separated into independent agents so the same
+# model that wrote the code cannot also be the only one grading it.
 class DeveloperAgent:
     def generate_code(
         self, task: str, previous_code: str = "", feedback: str = ""
@@ -70,6 +74,7 @@ class DeveloperAgent:
         print()
         return extract_code(code_output)
 
+# CONCEPT: Feedback control (Sensor), same role as example 3's lint/compile check.
 class TesterAgent:
     def run_checks(self, filename: str):
         logger.info("TesterAgent: Running lint and compile checks...")
@@ -102,6 +107,9 @@ class TesterAgent:
             logger.exception("TesterAgent: Unexpected error.")
             return False, str(e)
 
+# CONCEPT: Feedback evaluator.
+# Verifies functional behavior (actual program output), not just syntax -
+# a deeper check than the TesterAgent's lint/compile Sensor.
 class ReviewerAgent:
     def validate_output(self, filename: str, expected: str):
         logger.info("ReviewerAgent: Executing file to validate output...")

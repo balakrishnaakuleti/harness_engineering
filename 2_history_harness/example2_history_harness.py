@@ -1,15 +1,18 @@
+# Demo query: write a function that adds two numbers
+# Then (to show memory in action): now make it subtract instead
 # example2_history_harness.py
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
 from langchain_core.chat_history import InMemoryChatMessageHistory
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from harness_llm import get_llm
 
-# Connect to local Ollama instance with Gemma model
-llm = ChatOllama(
-    model="gemma3:4b",
-    temperature=0
-)
+# Connect to the shared inference endpoint (openai/gpt-oss-120b)
+llm = get_llm()
 
 # Define prompt template for iterative code generation
 prompt = ChatPromptTemplate.from_messages([
@@ -20,7 +23,9 @@ prompt = ChatPromptTemplate.from_messages([
 # Build chain
 chain = prompt | llm
 
-# Add history wrapper
+# CONCEPT: Memory & State.
+# The harness now remembers prior turns so follow-up requests have context,
+# instead of every request being a stateless, isolated model call.
 history = InMemoryChatMessageHistory()
 chain_with_history = RunnableWithMessageHistory(
     chain,

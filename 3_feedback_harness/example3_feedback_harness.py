@@ -1,3 +1,4 @@
+# Demo query: calculate the factorial of a number
 # example3_feedback_harness.py
 
 import re
@@ -5,8 +6,11 @@ import shutil
 import subprocess
 import sys
 import logging
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from harness_llm import get_llm
 
 # Configure logging
 logging.basicConfig(
@@ -17,11 +21,8 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Connect to local Ollama instance with Gemma model
-llm = ChatOllama(
-    model="gemma3:4b",
-    temperature=0
-)
+# Connect to the shared inference endpoint (openai/gpt-oss-120b)
+llm = get_llm()
 
 # Define prompt template for code generation with error feedback
 prompt = ChatPromptTemplate.from_template(
@@ -52,6 +53,8 @@ def extract_code(response: str) -> str:
     return response.strip() + "\n"
 
 
+# CONCEPT: Feedback control (Sensor).
+# Evaluates the model's output *after* it runs, instead of trusting it blindly.
 def run_lint_and_compile(filename: str):
     """Run available lint checks and compile the generated file."""
     try:
@@ -85,6 +88,9 @@ def run_lint_and_compile(filename: str):
         logger.exception("Unexpected error during lint/compile.")
         return False, str(e)
 
+# CONCEPT: Feedback loop.
+# Sensor failures are fed back into the next prompt so the model can self-correct,
+# instead of failing once with no way to recover.
 def feedback_loop(task: str, filename: str = "feedback_harness_code.py", max_attempts: int = 5):
     """Generate code, run checks, and stop after the configured attempts."""
     previous_code = ""

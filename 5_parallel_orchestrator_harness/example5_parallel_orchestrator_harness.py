@@ -1,3 +1,4 @@
+# Demo query: check if a number is prime
 # example5_parallel_orchestrator_harness.py
 
 import logging
@@ -7,8 +8,11 @@ import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from harness_llm import get_llm
 
 # Configure logging for observability
 logging.basicConfig(
@@ -18,8 +22,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Connect to local Ollama instance with Gemma model
-llm = ChatOllama(model="gemma3:4b", temperature=0)
+# Connect to the shared inference endpoint (openai/gpt-oss-120b)
+llm = get_llm()
 
 # Developer prompt
 developer_prompt = ChatPromptTemplate.from_template(
@@ -96,6 +100,9 @@ class TesterAgent:
             logger.exception("TesterAgent: Unexpected error.")
             return False, str(error)
 
+# CONCEPT: Guardrail (post-hoc scan).
+# Blocks unsafe patterns after generation but before the code ships, running
+# in parallel with the TesterAgent rather than gating execution up front.
 class SecurityAgent:
     def scan_code(self, filename: str):
         logger.info("SecurityAgent: Scanning code for unsafe patterns...")
@@ -139,7 +146,9 @@ class OrchestratorHarness:
             with open(filename, "w", encoding="utf-8") as f:
                 f.write(code)
 
-            # Run tester + security in parallel
+            # CONCEPT: Parallel orchestration.
+            # Independent Sensors (tester) and Guardrails (security) run concurrently
+            # instead of one after another, cutting validation latency.
             results = {}
             def run_tester():
                 results["tester"] = self.tester.run_checks(filename)

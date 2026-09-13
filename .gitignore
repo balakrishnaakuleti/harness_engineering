@@ -9,6 +9,10 @@ generated_code.py
 multi_agent_harness_code.py
 orchestrated_code.py
 parallel_harness_code.py
+guide_harness_code.py
+test_suite_harness_code.py
+sandbox_hitl_code.py
+_generated_test_runner.py
 
 # C extensions
 *.so
